@@ -5,8 +5,8 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -24,8 +24,8 @@ services:
     image: redis:alpine
     restart: unless-stopped
     command: ["sh", "-c", "redis-server --requirepass ${REDIS_PASSWORD:-evoai_redis_pass} --appendonly yes"]
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -33,13 +33,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  # MailHog removido/desabilitado para ambiente ARM64 (Oracle OCI ARM).
+  # A imagem mailhog/mailhog retorna "exec format error" nesse servidor.
+  # mailhog:
+  #   image: mailhog/mailhog
+  #   restart: unless-stopped
+  #   expose:
+  #     - "1025"
+  #     - "8025"
 
- # mailhog:
-  #  image: mailhog/mailhog
-   # restart: unless-stopped
-    #ports:
-     # - "1025:1025"
-      #- "8025:8025"
 
   # ---------------------------------------------------------------------------
   # Auth Service (Ruby / Rails) — Port 3001
@@ -49,8 +51,8 @@ services:
       context: ./evo-auth-service-community
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     env_file: .env
     environment:
       RAILS_ENV: ${RAILS_ENV:-development}
@@ -103,8 +105,8 @@ services:
         RAILS_ENV: development
         RAILS_SERVE_STATIC_FILES: "false"
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     env_file: .env
     environment:
       RAILS_ENV: ${RAILS_ENV:-development}
@@ -184,8 +186,8 @@ services:
       context: ./evo-ai-core-service-community
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "5555:5555"
+    expose:
+      - "5555"
     env_file: .env
     environment:
       DB_HOST: postgres
@@ -201,8 +203,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-healthcheck:
-  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5555/health"]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5555/health"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -216,8 +218,8 @@ healthcheck:
       context: ./evo-ai-processor-community
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     env_file: .env
     environment:
       POSTGRES_CONNECTION_STRING: postgresql://${POSTGRES_USERNAME:-postgres}:${POSTGRES_PASSWORD:-evoai_dev_password}@postgres:5432/${POSTGRES_DATABASE:-evo_community}
@@ -251,8 +253,8 @@ healthcheck:
       context: ./evo-bot-runtime
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     env_file: .env
     environment:
       LISTEN_ADDR: 0.0.0.0:8080
@@ -290,8 +292,8 @@ healthcheck:
       VITE_WS_URL: ${VITE_WS_URL:-http://localhost:3000}
       VITE_EVOAI_API_URL: ${VITE_EVOAI_API_URL:-http://localhost:5555}
       VITE_AGENT_PROCESSOR_URL: ${VITE_AGENT_PROCESSOR_URL:-http://localhost:8000}
-    ports:
-      - "5173:80"
+    expose:
+      - "80"
     depends_on:
       evo-auth:
         condition: service_healthy
